@@ -95,7 +95,7 @@ Accept-Charset首部字段可用来通知服务器用户代理支持的字符集
 ```
 accept-encoding: gzip, deflate, br
 ```
-Accept-Encoding首部字段用来告知服务器用户代理支持的内容编码及内容编码的优先级顺序。可一次性指定多种内容编码。
+Accept-Encoding首部字段用来告知服务器用户代理支持的内容编码(报文主体)及内容编码的优先级顺序。可一次性指定多种内容编码。
 
 - gzip
 由文件压缩程序gzip生成的编码格式
@@ -141,3 +141,19 @@ If-None-Match 是一个条件式请求首部。对于 GET 和 HEAD 请求方法�
 [![lfmxO0.md.png](https://s2.ax1x.com/2020/01/09/lfmxO0.md.png)](https://imgchr.com/i/lfmxO0)
 
 [![lfnlfH.md.png](https://s2.ax1x.com/2020/01/09/lfnlfH.md.png)](https://imgchr.com/i/lfnlfH)
+
+## Range
+
+```
+Range: bytes=5001-10000
+```
+对于只需要获取部分资源的范围请求，包含首部字段Range即可告知服务器资源的指定范围。上面的示例表示请求获取从第5001字节到10000字节的资源。
+接收到附带Range字段请求的服务器，会在处理请求之后返回状态码为206 Partial Content的响应。无法处理该范围请求时，则会返回状态码 200 OK
+的响应及全部资源。
+
+## User-Agent
+
+首部字段 User-Agent 会将创建请求的浏览器和用户代理名称等信息传达给服务器。
+
+
+
