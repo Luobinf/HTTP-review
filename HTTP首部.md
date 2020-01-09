@@ -95,7 +95,7 @@ Accept-Charset首部字段可用来通知服务器用户代理支持的字符集
 ```
 accept-encoding: gzip, deflate, br
 ```
-Accept-Encoding首部字段用来告知服务器用户代理支持的内容编码及内容编码的优先级顺序。可一次性指定多种内容编码。
+Accept-Encoding首部字段用来告知服务器用户代理支持的内容编码(报文主体)及内容编码的优先级顺序。可一次性指定多种内容编码。
 
 - gzip
 由文件压缩程序gzip生成的编码格式
@@ -122,12 +122,23 @@ zh-CN,zh;q=0.9
 
 首部字段 If-Match ，属于附带条件之一，它会告知服务器匹配资源所用的实体标记ETag值。仅当两者一致时，才会执行请求。
 
-## If-Modified-Since
-If-Modified-Since是一个条件式请求首部，服务器只在所请求的资源在给定的日期时间之后对内容进行过修改的情况下才会将资源返回，状态码为 200 。如果请求的资源从那时起未经修改，那么返回一个不带有消息主体的  304  响应，而在 Last-Modified 首部中会带有上次修改时间。 不同于 If-Unmodified-Since, If-Modified-Since 只可以用在 GET 或 HEAD 请求中。
+## If-Modified-Since 和 Last-Modified
+If-Modified-Since是一个条件式请求首部，服务器只在所请求的资源在给定的日期时间之后对内容进行过修改的情况下才会将资源返回，状态码为 200 。如果请求的资源从那时起未经修改，那么返回一个不带有消息主体的 304 响应，而在 Last-Modified 首部中会带有上次修改时间。 不同于 If-Unmodified-Since, If-Modified-Since 只可以用在 GET 或 HEAD 请求中。
 
 当与 If-None-Match 一同出现时，它（If-Modified-Since）会被忽略掉，除非服务器不支持 If-None-Match。
 
 最常见的应用场景是来更新没有特定 ETag 标签的缓存实体。
+
+在浏览器第一次请求某一个URL时，服务器端的返回状态会是200，内容是你请求的资源，同时有一个Last-Modified的属性标记此文件在服务期端最后被修改的时间，格式类似这样：
+```
+Last-Modified: Fri, 12 May 2006 18:53:33 GMT
+```
+客户端第二次请求此URI时，根据 HTTP 协议的规定，浏览器会向服务器传送 If-Modified-Since 报头，询问该时间之后文件是否有被修改过:
+```
+If-Modified-Since: Fri, 12 May 2006 18:53:33 GMT
+```
+
+如果服务器端的资源没有变化，则自动返回 HTTP 304 （Not Modified）状态码，内容为空，这样就节省了传输数据量。当服务器端代码发生改变或者重启服务器时，则重新发出资源，返回和第一次请求时类似。从而保证不向客户端重复发出资源，也保证当服务器有变化时，客户端能够得到最新的资源。
 
 
 ## If-None-Match
@@ -141,3 +152,103 @@ If-None-Match 是一个条件式请求首部。对于 GET 和 HEAD 请求方法�
 [![lfmxO0.md.png](https://s2.ax1x.com/2020/01/09/lfmxO0.md.png)](https://imgchr.com/i/lfmxO0)
 
 [![lfnlfH.md.png](https://s2.ax1x.com/2020/01/09/lfnlfH.md.png)](https://imgchr.com/i/lfnlfH)
+
+## Range
+
+```
+Range: bytes=5001-10000
+```
+对于只需要获取部分资源的范围请求，包含首部字段Range即可告知服务器资源的指定范围。上面的示例表示请求获取从第5001字节到10000字节的资源。
+接收到附带Range字段请求的服务器，会在处理请求之后返回状态码为206 Partial Content的响应。无法处理该范围请求时，则会返回状态码 200 OK
+的响应及全部资源。
+
+## User-Agent
+
+首部字段 User-Agent 会将创建请求的浏览器和用户代理名称等信息传达给服务器。
+
+# 响应首部字段
+
+响应首部字段是由服务器端相客户端返回响应报文中所使用的字段，用于补充响应的附加信息、服务器信息，以及对客户端的附加要求等信息。
+
+## ETag
+首部字段 ETag 能告知客户端实体标识。它是一种可以将资源以字符串形式做唯一型标识的方式。服务器会为每份资源分配对应的ETag值。
+另外，当资源更新时，ETag值也需要更新。生成ETag值时，并没有统一的算法规则，而仅仅是由服务器来分配(可以使用MD5来生成ETag值)。
+
+MD5 信息摘要算法：一种被广泛使用的密码散列函数，可以产生出一个128位（16字节）的散列值（hash value），用于确保信息传输完整一致。
+
+## Location
+[![lfh5wj.md.png](https://s2.ax1x.com/2020/01/10/lfh5wj.md.png)](https://imgchr.com/i/lfh5wj)
+
+使用首部字段Location可以将接收方引导至某个与请求URI位置不同的资源。
+
+基本上，该字段会配合3XX: Redirection的响应，提供重定向的URI
+
+
+# 实体首部字段
+实体首部字段是包含在请求报文和响应报文中的实体部分所使用的首部，用于补充内容的更新时间等与实体相关的信息。
+
+## Allow
+首部字段 Allow 用于通知客户端能够支持指定资源的所有HTTP方法。当服务器接收到不支持的HTTP方法时，会以状态码405 Method Not Allowed 作为响应返回。与此同时，还会把所有能支持的HTTP方法写入首部字段Allow后返回。
+
+## Content-Encoding
+```
+Content-Encoding: gzip
+```
+首部字段 Content-Encoding 会告知客户端服务器对实体的主体部分选用的内容编码方式。内容编码是指在不丢失实体信息的前提下所进行的压缩。
+
+主要采用以下4种内容编码的方式。
+- gzip
+- compress
+- deflate
+- identity
+
+## Content-Language
+
+```
+Content-Language: zh-CN
+```
+首部字段 Content-Language 会告知客户端，实体主体使用的自然语言(指中文或英文等语言)
+
+## Content-Length
+
+```
+Content-Length: 15000
+```
+首部字段 Content-Length 表明了实体主体部分的大小(单位是字节)。对实体主体进行内容编码传输时，不能再使用 Content-Length 首部字段。
+
+## Content-Type
+```
+Content-Type: text/javascript;charset=utf-8
+```
+该首部字段说明了实体主体内对象的媒体类型。
+
+## Expires
+
+首部字段 Expires 会将资源失效的日期告知客户端。缓存服务器接收到含有首部字段 Expires 的响应后，会以缓存来应答请求，在 Expires 字段值指定的时间之前，响应的副本会一直被保存。当超过指定的时间后，缓存服务器在请求发送过来时，会转向源服务器请求资源。
+
+但是，当首部字段 Cache-Control 有指定 max-age 指令时，比起首部字段 Expires，会优先处理 max-age 指令。
+
+
+## Last-Modified
+该字段表示资源最终修改的时间。
+
+# 为 Cookie 服务的首部字段
+
+- Set-Cookie：开始状态管理所使用的Cookie信息，响应首部字段。
+- Cookie： 服务器收到的 Cookie 信息，请求首部字段
+
+## Set-Cookie
+当服务器准备开始管理客户端的状态时，会事先告知各种信息。
+
+Set-Cookie字段的属性：
+
+- NAME-VALUE: 赋予Cookie的名称和其值(必须项)
+- expires=DATE: Cookie的有效期(若不明确指定则默认为浏览器关闭前为止)
+- path=PATH: 将服务器上的文件目录作为Cookie的适用对象(若不指定则默认为文档所在的文件目录)
+- domain=域名: 作为Cookie适用对象的域名(若不指定则默认为创建Cookie的服务器的域名)
+- Secure: 仅在HTTPS安全通信时才会发送Cookie
+- HttpOnly: 加以限制，使得Cookie不能被Javascript脚本访问
+
+## Cookie
+首部字段Cookie会告知服务器，当客户端想要获得HTTP状态管理支持时，就会在请求中包含从服务器接收到的Cookie。接收到多个Cookie时，同样可以以多个Cookie形式发送。
+
